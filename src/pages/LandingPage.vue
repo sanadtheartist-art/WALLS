@@ -117,13 +117,13 @@
     </section>
 
     <!-- Featured Walls -->
-    <section v-if="featuredUsers.length" id="featured" class="relative z-10 py-24 px-6">
+    <section id="featured" class="relative z-10 py-24 px-6">
       <div class="max-w-5xl mx-auto">
         <div class="text-center mb-12 landing-section">
           <p class="text-blue-400 text-sm font-semibold uppercase tracking-widest mb-4">Community picks</p>
           <h2 class="text-4xl font-black text-white">Featured Walls</h2>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div v-if="featuredUsers.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <router-link
             v-for="user in featuredUsers"
             :key="user.username"
@@ -138,6 +138,14 @@
               <div class="text-white font-bold truncate group-hover:text-blue-300 transition-colors">{{ user.display_name || user.username }}</div>
               <div class="text-gray-500 text-sm truncate">@{{ user.username }}</div>
             </div>
+          </router-link>
+        </div>
+        <div v-else class="text-center p-12 bg-white/5 border border-white/10 rounded-2xl">
+          <div class="text-4xl mb-4">✨</div>
+          <h3 class="text-xl font-bold text-white mb-2">Featured walls coming soon</h3>
+          <p class="text-gray-400">Be the first to get featured by creating your own wall!</p>
+          <router-link to="/signup" class="inline-flex mt-6 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-full hover:scale-105 transition-transform">
+            Claim your link
           </router-link>
         </div>
       </div>
