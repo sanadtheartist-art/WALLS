@@ -53,9 +53,9 @@
                 {{ user.plan || 'free' }}
               </span>
             </td>
-            <td class="px-6 py-4 text-gray-400 text-sm">{{ formatDate(user.createdAt?.seconds * 1000) }}</td>
+            <td class="px-6 py-4 text-gray-400 text-sm">{{ formatDate(user.createdAt || user.created_at) }}</td>
             <td class="px-6 py-4">
-              <span class="w-2 h-2 rounded-full inline-block" :class="user.isPublic !== false ? 'bg-emerald-500' : 'bg-gray-600'"></span>
+              <span class="w-2 h-2 rounded-full inline-block" :class="(user.isPublic !== false || user.is_public) ? 'bg-emerald-500' : 'bg-gray-600'"></span>
             </td>
           </tr>
         </tbody>
@@ -66,8 +66,6 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore'
-import { db } from '../../config/firebase'
 import { supabase } from '../../config/supabase'
 
 const loading = ref(true)
@@ -87,13 +85,11 @@ const formatDate = (d) => {
 const loadStats = async () => {
   loading.value = true
   try {
-    const snap = await getDocs(collection(db, 'users'))
-    const allUsers = snap.docs.map(doc => ({ uid: doc.id, ...doc.data() }))
+    const { data: allUsers } = await supabase.from('profiles').select('*')
     
-    const publicUsers = allUsers.filter(u => u.isPublic !== false)
+    const publicUsers = allUsers.filter(u => u.is_public !== false)
     const proUsers = allUsers.filter(u => u.plan === 'pro')
 
-    // Fetch analytics directly from Supabase since events are high-frequency logs not in Firebase
     const { count: eventCount } = await supabase.from('analytics_events').select('id', { count: 'exact', head: true })
 
     stats.value[0].value = allUsers.length
@@ -101,10 +97,14 @@ const loadStats = async () => {
     stats.value[2].value = proUsers.length
     stats.value[3].value = eventCount ?? 0
 
-    // Fetch recent 8 users
-    const recentQ = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(8))
-    const recentSnap = await getDocs(recentQ)
-    recentUsers.value = recentSnap.docs.map(d => ({ uid: d.id, ...d.data() }))
+    const { data: recentData } = await supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(8)
+    recentUsers.value = recentData.map(p => ({
+      uid: p.id,
+      ...p,
+      displayName: p.display_name,
+      isPublic: p.is_public,
+      createdAt: p.created_at
+    }))
 
   } catch (err) {
     console.error('Admin overview error:', err)

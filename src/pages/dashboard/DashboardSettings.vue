@@ -95,9 +95,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../../stores/auth'
-import { auth, db } from '../../config/firebase'
-import { deleteUser, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth'
-import { doc, deleteDoc, collection, getDocs, writeBatch } from 'firebase/firestore'
 import { supabase } from '../../config/supabase'
 import { useRouter } from 'vue-router'
 
@@ -118,14 +115,14 @@ const formData = ref({
 
 onMounted(() => {
   if (authStore.user) {
-    formData.value.isPublic = authStore.user.isPublic ?? true
-    formData.value.seoTitle = authStore.user.seoTitle ?? ''
-    formData.value.seoDesc = authStore.user.seoDesc ?? ''
-    formData.value.loadingText = authStore.user.loadingText ?? ''
-    formData.value.loadingBgColor = authStore.user.loadingBgColor ?? '#000000'
-    formData.value.loadingTextColor = authStore.user.loadingTextColor ?? '#ffffff'
-    formData.value.loadingTextSize = authStore.user.loadingTextSize ?? 'text-3xl'
-    formData.value.loadingAnimation = authStore.user.loadingAnimation ?? 'animate-pulse'
+    formData.value.isPublic = authStore.user.is_public ?? authStore.user.isPublic ?? true
+    formData.value.seoTitle = authStore.user.seo_title ?? authStore.user.seoTitle ?? ''
+    formData.value.seoDesc = authStore.user.seo_desc ?? authStore.user.seoDesc ?? ''
+    formData.value.loadingText = authStore.user.loading_text ?? authStore.user.loadingText ?? ''
+    formData.value.loadingBgColor = authStore.user.loading_bg_color ?? authStore.user.loadingBgColor ?? '#000000'
+    formData.value.loadingTextColor = authStore.user.loading_text_color ?? authStore.user.loadingTextColor ?? '#ffffff'
+    formData.value.loadingTextSize = authStore.user.loading_text_size ?? authStore.user.loadingTextSize ?? 'text-3xl'
+    formData.value.loadingAnimation = authStore.user.loading_animation ?? authStore.user.loadingAnimation ?? 'animate-pulse'
   }
 })
 
@@ -153,42 +150,19 @@ const deleteAccount = async () => {
   
   deleting.value = true
   try {
-    const user = auth.currentUser
-    if (!user) throw new Error('No user logged in')
+    if (!authStore.user) throw new Error('No user logged in')
     
-    const uid = user.uid
+    const userId = authStore.user.id
     const username = authStore.user.username
     
-    // 1. Delete all blocks from Firestore
-    const blocksRef = collection(db, 'users', uid, 'blocks')
-    const blocksSnapshot = await getDocs(blocksRef)
-    const batch = writeBatch(db)
-    blocksSnapshot.docs.forEach(docSnapshot => {
-      batch.delete(docSnapshot.ref)
-    })
-    
-    // 2. Delete username doc
-    if (username) {
-      batch.delete(doc(db, 'usernames', username))
-    }
-    
-    // 3. Delete user doc
-    batch.delete(doc(db, 'users', uid))
-    
-    // Commit Firestore batch
-    await batch.commit()
-    
-    // 4. Delete user from Supabase
-    await supabase.from('users').delete().eq('uid', uid)
-    await supabase.from('reserved_usernames').delete().eq('username', username)
-    await supabase.from('analytics_events').delete().eq('uid', uid)
-    
-    // 5. Delete Firebase Auth user (skip reauth for simplicity, or implement server-side deletion)
-    try {
-      await deleteUser(user)
-    } catch (authError) {
-      console.warn('Error deleting Firebase auth user (may require server-side deletion):', authError)
-    }
+    // 1. Delete blocks
+    await supabase.from('blocks').delete().eq('user_id', userId)
+    // 2. Delete username
+    await supabase.from('usernames').delete().eq('user_id', userId)
+    // 3. Delete profile
+    await supabase.from('profiles').delete().eq('id', userId)
+    // 4. Delete analytics events
+    await supabase.from('analytics_events').delete().eq('user_id', userId)
     
     // Log out and redirect
     await authStore.logOut()

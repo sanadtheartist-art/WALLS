@@ -18,8 +18,5 @@ export default defineConfig({
   },
   esbuild: {
     sourcemap: false
-  },
-  optimizeDeps: {
-    include: ['firebase/app', 'firebase/auth', 'firebase/firestore']
   }
 })

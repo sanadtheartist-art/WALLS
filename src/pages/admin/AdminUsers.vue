@@ -30,12 +30,12 @@
             <tr v-for="user in filteredUsers" :key="user.uid" class="hover:bg-[#1e293b]/40 transition-colors group">
               <td class="px-6 py-4">
                 <div class="flex items-center gap-3">
-                  <img v-if="user.avatarUrl" :src="user.avatarUrl" class="w-9 h-9 rounded-full object-cover border border-[#1e293b]" />
+                  <img v-if="user.avatar_url || user.avatarUrl" :src="user.avatar_url || user.avatarUrl" class="w-9 h-9 rounded-full object-cover border border-[#1e293b]" />
                   <div v-else class="w-9 h-9 rounded-full bg-orange-500/20 flex items-center justify-center text-sm font-bold text-orange-300">
-                    {{ (user.displayName || user.username || '?').charAt(0).toUpperCase() }}
+                    {{ (user.displayName || user.display_name || user.username || '?').charAt(0).toUpperCase() }}
                   </div>
                   <div>
-                    <div class="font-medium text-white text-sm">{{ user.displayName || '—' }}</div>
+                    <div class="font-medium text-white text-sm">{{ user.displayName || user.display_name || '—' }}</div>
                     <div class="text-xs text-gray-500">@{{ user.username }}</div>
                   </div>
                 </div>
@@ -46,11 +46,11 @@
                   <option value="pro">Pro</option>
                 </select>
               </td>
-              <td class="px-6 py-4 text-gray-400 text-sm">{{ formatDate(user.createdAt?.seconds * 1000) }}</td>
+              <td class="px-6 py-4 text-gray-400 text-sm">{{ formatDate(user.createdAt || user.created_at) }}</td>
               <td class="px-6 py-4">
-                <button @click="togglePublic(user)" class="flex items-center gap-2 text-xs px-2 py-1 rounded-full border transition-all" :class="user.isPublic !== false ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' : 'border-gray-600 bg-gray-600/10 text-gray-500'">
-                  <span class="w-1.5 h-1.5 rounded-full" :class="user.isPublic !== false ? 'bg-emerald-500' : 'bg-gray-500'"></span>
-                  {{ user.isPublic !== false ? 'Public' : 'Private' }}
+                <button @click="togglePublic(user)" class="flex items-center gap-2 text-xs px-2 py-1 rounded-full border transition-all" :class="(user.isPublic !== false || user.is_public) ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' : 'border-gray-600 bg-gray-600/10 text-gray-500'">
+                  <span class="w-1.5 h-1.5 rounded-full" :class="(user.isPublic !== false || user.is_public) ? 'bg-emerald-500' : 'bg-gray-500'"></span>
+                  {{ (user.isPublic !== false || user.is_public) ? 'Public' : 'Private' }}
                 </button>
               </td>
               <td class="px-6 py-4">
@@ -69,8 +69,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { collection, getDocs, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
-import { db } from '../../config/firebase'
+import { supabase } from '../../config/supabase'
 
 const users = ref([])
 const loading = ref(true)
@@ -81,17 +80,24 @@ const filteredUsers = computed(() => {
   const q = search.value.toLowerCase()
   return users.value.filter(u => 
     u.username?.toLowerCase().includes(q) || 
+    u.display_name?.toLowerCase().includes(q) ||
     u.displayName?.toLowerCase().includes(q)
   )
 })
 
-const formatDate = (ms) => ms ? new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
+const formatDate = (dateStr) => dateStr ? new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
 
 const fetchUsers = async () => {
   loading.value = true
   try {
-    const snap = await getDocs(collection(db, 'users'))
-    users.value = snap.docs.map(doc => ({ uid: doc.id, ...doc.data() })).sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+    const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
+    users.value = data.map(profile => ({
+      uid: profile.id,
+      ...profile,
+      displayName: profile.display_name,
+      isPublic: profile.is_public,
+      createdAt: profile.created_at
+    }))
   } finally {
     loading.value = false
   }
@@ -100,18 +106,24 @@ const fetchUsers = async () => {
 onMounted(fetchUsers)
 
 const togglePublic = async (user) => {
-  user.isPublic = user.isPublic === false ? true : false
-  await updateDoc(doc(db, 'users', user.uid), { isPublic: user.isPublic, updatedAt: serverTimestamp() })
+  const newPublic = user.is_public === false ? true : false
+  await supabase.from('profiles').update({ is_public: newPublic }).eq('id', user.uid)
+  user.is_public = newPublic
+  user.isPublic = newPublic
 }
 
 const changePlan = async (user, plan) => {
+  await supabase.from('profiles').update({ plan }).eq('id', user.uid)
   user.plan = plan
-  await updateDoc(doc(db, 'users', user.uid), { plan, updatedAt: serverTimestamp() })
 }
 
 const deleteUser = async (user) => {
-  if (!confirm(`Are you sure you want to delete ${user.username}? This will remove their user document.`)) return
-  await deleteDoc(doc(db, 'users', user.uid))
+  if (!confirm(`Are you sure you want to delete ${user.username}? This will remove their user document and all associated data.`)) return
+  // Delete blocks, username, profile, analytics
+  await supabase.from('blocks').delete().eq('user_id', user.uid)
+  await supabase.from('usernames').delete().eq('user_id', user.uid)
+  await supabase.from('analytics_events').delete().eq('user_id', user.uid)
+  await supabase.from('profiles').delete().eq('id', user.uid)
   users.value = users.value.filter(u => u.uid !== user.uid)
 }
 </script>

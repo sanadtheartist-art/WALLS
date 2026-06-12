@@ -106,8 +106,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, nextTick, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { db } from '../config/firebase'
-import { doc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore'
 import { supabase } from '../config/supabase'
 import gsap from 'gsap'
 
@@ -152,14 +150,14 @@ const visibleBlocks = computed(() => blocks.value.filter(b => b.visible !== fals
 const paletteMap = PALETTE_MAP
 
 const getAccent = () => {
-  if (user.value?.customAccentColor) return user.value.customAccentColor
-  return paletteMap[user.value?.colorPalette]?.accent ?? '#7c3aed'
+  if (user.value?.custom_accent_color) return user.value.custom_accent_color
+  return paletteMap[user.value?.color_palette]?.accent ?? '#7c3aed'
 }
 
 const cssVars = computed(() => {
   if (!user.value) return {}
-  const p = paletteMap[user.value.colorPalette] ?? paletteMap.violet
-  const accent = user.value.customAccentColor || p.accent
+  const p = paletteMap[user.value.color_palette] ?? paletteMap.violet
+  const accent = user.value.custom_accent_color || p.accent
   return {
     '--color-bg':      p.bg,
     '--color-surface': p.surface,
@@ -171,12 +169,12 @@ const cssVars = computed(() => {
 
 const pageBgStyle = computed(() => {
   if (!user.value) return {}
-  const bgType = user.value.bgType || 'default'
-  if (bgType === 'solid' && user.value.bgSolid) return { background: user.value.bgSolid }
-  if (bgType === 'image' && user.value.imageUrl) return { backgroundColor: 'transparent' }
-  if (bgType === 'gradient' && user.value.bgGradFrom) {
-    const dir = user.value.bgGradDir || 'to bottom right'
-    return { background: `linear-gradient(${dir}, ${user.value.bgGradFrom}, ${user.value.bgGradTo || '#3b82f6'})` }
+  const bgType = user.value.bg_type || 'default'
+  if (bgType === 'solid' && user.value.bg_solid) return { background: user.value.bg_solid }
+  if (bgType === 'image' && user.value.image_url) return { backgroundColor: 'transparent' }
+  if (bgType === 'gradient' && user.value.bg_grad_from) {
+    const dir = user.value.bg_grad_dir || 'to bottom right'
+    return { background: `linear-gradient(${dir}, ${user.value.bg_grad_from}, ${user.value.bg_grad_to || '#3b82f6'})` }
   }
   if (bgType === 'video') return { background: '#000' }
   return getThemeBackground(user.value.theme)
@@ -199,19 +197,18 @@ const injectFont = (fontId) => {
 }
 
 const linkClass = (block) => {
-  const style = block.style || user.value?.defaultBlockStyle || 'default'
-  return getBlockClass(style, block, user.value?.defaultBlockStyle)
+  const style = block.style || user.value?.default_block_style || 'default'
+  return getBlockClass(style, block, user.value?.default_block_style)
 }
 
 // ── Analytics ─────────────────────────────────────────────────────────────────
 const trackEvent = async (eventType, blockId = null) => {
-  if (!user.value?.uid) return
+  if (!user.value?.id) return
   try {
     await supabase.from('analytics_events').insert({ 
-      uid: user.value.uid, 
+      user_id: user.value.id, 
       block_id: blockId, 
-      event_type: eventType,
-      created_at: new Date().toISOString()
+      event_type: eventType
     })
   } catch (e) {
     console.error('Error tracking event:', e)
@@ -224,14 +221,24 @@ const trackClick = (block) => {
 
 // Track page view when profile loads
 const trackPageView = async () => {
-  if (user.value?.uid) {
+  if (user.value?.id) {
     await trackEvent('view')
   }
 }
 
+// Map snake_case to camelCase for compatibility with components
+const mapUserToCamelCase = (userData) => {
+  const mapped = { ...userData, uid: userData.id }
+  for (const [key, value] of Object.entries(userData)) {
+    const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
+    mapped[camelKey] = value
+  }
+  return mapped
+}
+
 // ── GSAP Animations ───────────────────────────────────────────────────────────
 const triggerAnimations = () => {
-  const style = user.value?.animationStyle || 'fade-up'
+  const style = user.value?.animation_style || 'fade-up'
   const config = getAnimationFrom(style)
   nextTick(() => {
     gsap.set('.wall-block', { clearProps: 'all' })
@@ -251,50 +258,82 @@ const triggerAnimations = () => {
   })
 }
 
+const fetchUser = async () => {
+  const { data: usernameData, error: usernameError } = await supabase.from('usernames').select('user_id').eq('username', username.value).single()
+  if (usernameError) return router.push('/404')
+
+  const userId = usernameData.user_id
+
+  const { data: profileData, error: profileError } = await supabase.from('profiles').select('*').eq('id', userId).single()
+  if (profileError) return router.push('/404')
+
+  user.value = mapUserToCamelCase(profileData)
+  injectFont(user.value.font)
+
+  // SEO Settings
+  document.title = user.value.seoTitle || `${user.value.displayName || user.value.username} - Walls`
+  if (user.value.seoDesc) {
+    let metaDesc = document.querySelector('meta[name="description"]')
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta')
+      metaDesc.name = 'description'
+      document.head.appendChild(metaDesc)
+    }
+    metaDesc.content = user.value.seoDesc
+  }
+
+  return userId
+}
+
+const fetchBlocks = async (userId) => {
+  const { data, error } = await supabase.from('blocks').select('*').eq('user_id', userId).order('position')
+  if (!error) {
+    blocks.value = data
+    if (!showCustomLoading.value) triggerAnimations()
+  }
+}
+
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 onMounted(async () => {
   try {
-    const usernameDoc = await getDoc(doc(db, 'usernames', username.value))
-    if (!usernameDoc.exists()) return router.push('/404')
+    const userId = await fetchUser()
+    if (!userId) return
 
-    const uid = usernameDoc.data().uid
+    trackPageView()
+    if (user.value.loadingText) {
+      showCustomLoading.value = true
+      setTimeout(() => {
+        showCustomLoading.value = false
+        triggerAnimations()
+      }, 1500)
+    }
 
-    unsubscribeUser = onSnapshot(doc(db, 'users', uid), (userDoc) => {
-      if (!userDoc.exists()) return router.push('/404')
-      
-      const isInitialLoad = !user.value
-      user.value = { uid, ...userDoc.data() }
-      injectFont(user.value.font)
-      
-      if (isInitialLoad) {
-        trackPageView()
-        if (user.value.loadingText) {
-          showCustomLoading.value = true
-          setTimeout(() => {
-            showCustomLoading.value = false
-            triggerAnimations()
-          }, 1500)
-        }
-      }
+    await fetchBlocks(userId)
 
-      // SEO Settings
-      document.title = user.value.seoTitle || `${user.value.displayName || user.value.username} - Walls`
-      if (user.value.seoDesc) {
-        let metaDesc = document.querySelector('meta[name="description"]')
-        if (!metaDesc) {
-          metaDesc = document.createElement('meta')
-          metaDesc.name = 'description'
-          document.head.appendChild(metaDesc)
-        }
-        metaDesc.content = user.value.seoDesc
-      }
-    })
+    // Subscribe to real-time changes
+    unsubscribeUser = supabase
+      .channel('public:profiles')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles',
+        filter: `id=eq.${userId}`
+      }, async (payload) => {
+        user.value = mapUserToCamelCase(payload.new)
+        injectFont(user.value.font)
+      })
+      .subscribe()
 
-    const q = query(collection(db, 'users', uid, 'blocks'), orderBy('position'))
-    unsubscribeBlocks = onSnapshot(q, (snap) => {
-      blocks.value = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      if (!showCustomLoading.value) triggerAnimations()
-    })
+    unsubscribeBlocks = supabase
+      .channel('public:blocks')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'blocks',
+        filter: `user_id=eq.${userId}`
+      }, () => fetchBlocks(userId))
+      .subscribe()
+
   } catch (e) {
     console.error('[PublicProfile]', e)
   } finally {
@@ -303,8 +342,8 @@ onMounted(async () => {
 })
 
 onUnmounted(() => { 
-  if (unsubscribeBlocks) unsubscribeBlocks() 
-  if (unsubscribeUser) unsubscribeUser()
+  if (unsubscribeBlocks) unsubscribeBlocks.unsubscribe() 
+  if (unsubscribeUser) unsubscribeUser.unsubscribe()
 })
 </script>
 
