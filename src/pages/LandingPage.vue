@@ -55,7 +55,7 @@
           <router-link to="/signup" class="group px-8 py-4 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-full text-lg shadow-[0_0_40px_rgba(249,115,22,0.45)] transition-all hover:scale-105 hover:shadow-[0_0_60px_rgba(245,158,11,0.5)]">
             {{ landingConfig.ctaText || 'Claim your link' }}
           </router-link>
-          <a v-if="featuredUsers.length" href="#featured" class="px-8 py-4 border border-white/20 text-white font-semibold rounded-full text-lg hover:bg-white/5 transition-all text-center">
+          <a href="#featured" class="px-8 py-4 border border-white/20 text-white font-semibold rounded-full text-lg hover:bg-white/5 transition-all text-center">
             {{ landingConfig.ctaSecondaryText || 'See featured walls' }}
           </a>
         </div>
