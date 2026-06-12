@@ -73,19 +73,20 @@ export const useSiteConfigStore = defineStore('siteConfig', {
 
         if (error) {
           console.error('Error fetching featured users:', error)
-          this.featuredUsers = []
+          // Fallback to just usernames
+          this.featuredUsers = this.featured_walls.map(u => ({ username: u, display_name: u, avatar_url: '' }))
           return
         }
 
         // Maintain order from featured_walls
         const userMap = new Map()
         data?.forEach(user => userMap.set(user.username, user))
-        this.featuredUsers = this.featured_walls
-          .map(username => userMap.get(username))
-          .filter(Boolean)
+        this.featuredUsers = this.featured_walls.map(username => {
+          return userMap.get(username) || { username, display_name: username, avatar_url: '' }
+        })
       } catch (e) {
         console.error('Error fetching featured users:', e)
-        this.featuredUsers = []
+        this.featuredUsers = this.featured_walls.map(u => ({ username: u, display_name: u, avatar_url: '' }))
       }
     },
 

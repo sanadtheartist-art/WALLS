@@ -89,12 +89,14 @@ onMounted(fetchReserved)
 const addReserved = async () => {
   saving.value = true
   try {
-    const { data, error } = await supabase.from('reserved_usernames').insert({
+    const newItem = {
       username: newUsername.value.toLowerCase().trim(),
       reason: newReason.value.trim() || null,
       added_by: authStore.adminUser?.email || 'admin',
       added_at: new Date().toISOString()
-    }).select()
+    }
+    
+    const { data, error } = await supabase.from('reserved_usernames').insert(newItem).select()
     
     if (error) {
       console.error('Error adding reserved username:', error)
@@ -103,10 +105,13 @@ const addReserved = async () => {
     }
     
     console.log('Inserted reserved username:', data)
+    
+    // Add locally to bypass any RLS select issues
+    reserved.value.unshift(data?.[0] || newItem)
+    
     newUsername.value = ''
     newReason.value = ''
     showAdd.value = false
-    await fetchReserved()
   } catch (e) {
     console.error('Exception adding reserved username:', e)
     alert('Exception adding reserved username: ' + e.message)

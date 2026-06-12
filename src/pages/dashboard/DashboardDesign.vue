@@ -162,7 +162,7 @@ import { useAuthStore } from '../../stores/auth'
 import { Icon } from '@iconify/vue'
 import CloudinaryUpload from '../../components/ui/CloudinaryUpload.vue'
 import VideoInput from '../../components/ui/VideoInput.vue'
-import { THEMES, PALETTES, FONTS, ANIMATIONS, BLOCK_STYLES, AMBIENT_EFFECTS } from '../../constants/design'
+import { THEMES, PALETTES, FONTS, ANIMATIONS, BLOCK_STYLES, AMBIENT_EFFECTS, FONT_FAMILY_MAP } from '../../constants/design'
 
 const authStore = useAuthStore()
 const saved = ref(false)
@@ -185,7 +185,22 @@ const ambientEffects = AMBIENT_EFFECTS
 
 const gradPreview = computed(() => `linear-gradient(${gradDir.value}, ${gradFrom.value}, ${gradTo.value})`)
 
+const loadAllFonts = () => {
+  fonts.forEach(f => {
+    const name = FONT_FAMILY_MAP[f.id]
+    if (!name) return
+    const id = `font-${f.id}`
+    if (document.getElementById(id)) return
+    const link = document.createElement('link')
+    link.id = id
+    link.rel = 'stylesheet'
+    link.href = `https://fonts.googleapis.com/css2?family=${name}:wght@400;600;700;900&display=swap`
+    document.head.appendChild(link)
+  })
+}
+
 onMounted(() => {
+  loadAllFonts()
   if (user.value.customAccentColor) customAccent.value = user.value.customAccentColor
   if (user.value.bgSolid) bgSolid.value = user.value.bgSolid
   if (user.value.bgGradFrom) gradFrom.value = user.value.bgGradFrom
