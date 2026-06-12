@@ -8,7 +8,10 @@
     </div>
 
     <!-- Header -->
-    <header class="fixed top-0 left-0 right-0 z-50 px-6 py-5 flex items-center justify-between backdrop-blur-md bg-black/20 border-b border-white/5">
+    <header 
+      class="fixed left-0 right-0 z-50 px-6 py-5 flex items-center justify-between backdrop-blur-md bg-black/20 border-b border-white/5"
+      :class="{ 'top-10': siteConfig.bannerActive && siteConfig.bannerText, 'top-0': !(siteConfig.bannerActive && siteConfig.bannerText) }"
+    >
       <div class="text-white font-black text-2xl tracking-tighter">WALLS<span class="text-orange-400">.</span></div>
       <nav class="hidden md:flex items-center gap-8 text-sm text-gray-400">
         <a href="#about" class="hover:text-white transition-colors">About</a>
@@ -24,7 +27,10 @@
     </header>
 
     <!-- Hero -->
-    <section class="relative min-h-screen flex flex-col items-center justify-center px-6 pt-24 pb-16 z-10">
+    <section 
+      class="relative min-h-screen flex flex-col items-center justify-center px-6 pb-16 z-10"
+      :class="{ 'pt-32': siteConfig.bannerActive && siteConfig.bannerText, 'pt-24': !(siteConfig.bannerActive && siteConfig.bannerText) }"
+    >
       <div class="absolute inset-0 z-0 overflow-hidden">
         <div v-if="landingConfig.videoUrl" class="w-full h-full opacity-50">
           <VideoPlayer :url="landingConfig.videoUrl" autoplay loop muted cover background />
