@@ -6,7 +6,7 @@
       <DashboardSidebar class="hidden md:flex" />
       
       <!-- Center Main Content -->
-      <main class="flex-1 overflow-y-auto pb-24 md:pb-6 p-4 sm:p-6 bg-[#111827]">
+      <main class="flex-1 overflow-y-auto pb-24 md:pb-6 px-4 sm:px-6 py-4 sm:py-6 bg-[#111827]">
         <router-view />
       </main>
 

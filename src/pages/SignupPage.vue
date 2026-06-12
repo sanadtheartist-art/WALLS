@@ -46,8 +46,36 @@
         </p>
       </div>
 
-      <!-- STEP 2: Avatar Upload -->
-      <div v-else-if="step === 2" class="text-center">
+      <!-- STEP 2: Password Setup (for Google signups) -->
+      <div v-else-if="step === 2 && isGoogleSignup" class="text-center">
+        <h1 class="text-3xl font-bold mb-4">Set a Password</h1>
+        <p class="text-gray-400 mb-8">To delete your account later, you'll need a password.</p>
+        
+        <form @submit.prevent="handleSetPassword" class="space-y-4 text-left">
+          <div>
+            <label class="block text-sm mb-1">New Password</label>
+            <input type="password" v-model="googlePassword" class="w-full px-4 py-2 rounded-lg bg-surface border border-muted focus:border-accent focus:outline-none" required>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Confirm Password</label>
+            <input type="password" v-model="googlePasswordConfirm" class="w-full px-4 py-2 rounded-lg bg-surface border border-muted focus:border-accent focus:outline-none" required>
+          </div>
+
+          <p v-if="error" class="text-red-500 text-sm">{{ error }}</p>
+          
+          <div class="space-y-3">
+            <button type="submit" :disabled="loading" class="w-full py-3 bg-orange-600 text-white font-semibold rounded-lg hover:bg-orange-500 disabled:opacity-50 transition-colors">
+              {{ loading ? 'Saving...' : 'Set Password & Continue' }}
+            </button>
+            <button @click="skipPasswordStep" type="button" :disabled="loading" class="w-full py-3 bg-transparent text-gray-400 border border-gray-600 font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors">
+              Skip for now
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- STEP 3: Avatar Upload -->
+      <div v-else-if="step === 2 || step ===3" class="text-center">
         <h1 class="text-3xl font-bold mb-4">Set your Avatar</h1>
         <p class="text-gray-400 mb-8">Upload a picture to make your wall stand out.</p>
         
@@ -82,11 +110,14 @@ const username = ref('')
 const displayName = ref('')
 const email = ref('')
 const password = ref('')
+const googlePassword = ref('')
+const googlePasswordConfirm = ref('')
 const error = ref('')
 const loading = ref(false)
 
 const step = ref(1)
 const tempAvatarUrl = ref('')
+const isGoogleSignup = ref(false)
 
 const onAvatarCropped = (url) => {
   tempAvatarUrl.value = url
@@ -111,11 +142,12 @@ const handleGoogleSignup = async () => {
   error.value = ''
   try {
     const res = await authStore.logInWithGoogle()
+    isGoogleSignup.value = true
     if (res.isNewUser) {
       if (authStore.user?.avatarUrl) {
         tempAvatarUrl.value = authStore.user.avatarUrl
       }
-      step.value = 2 // Go directly to avatar step!
+      step.value = 2 // Go to password step first!
     } else {
       router.push('/dashboard')
     }
@@ -126,11 +158,33 @@ const handleGoogleSignup = async () => {
   }
 }
 
+const handleSetPassword = async () => {
+  if (googlePassword.value !== googlePasswordConfirm.value) {
+    error.value = 'Passwords do not match'
+    return
+  }
+  loading.value = true
+  error.value = ''
+  try {
+    await authStore.setPassword(googlePassword.value)
+    step.value = 3 // Now go to avatar step
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    loading.value = false
+  }
+}
+
+const skipPasswordStep = () => {
+  step.value = 3
+}
+
 const handleSignup = async () => {
   loading.value = true
   error.value = ''
   try {
     await authStore.signUp(email.value, password.value, username.value, displayName.value)
+    isGoogleSignup.value = false
     step.value = 2 // Go to avatar step
   } catch (err) {
     error.value = err.message

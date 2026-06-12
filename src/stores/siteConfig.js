@@ -65,12 +65,28 @@ export const useSiteConfigStore = defineStore('siteConfig', {
         return
       }
 
-      const { data } = await supabase
-        .from('users')
-        .select('username, display_name, avatar_url')
-        .in('username', this.featured_walls)
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('username, display_name, avatar_url')
+          .in('username', this.featured_walls)
 
-      this.featuredUsers = data || []
+        if (error) {
+          console.error('Error fetching featured users:', error)
+          this.featuredUsers = []
+          return
+        }
+
+        // Maintain order from featured_walls
+        const userMap = new Map()
+        data?.forEach(user => userMap.set(user.username, user))
+        this.featuredUsers = this.featured_walls
+          .map(username => userMap.get(username))
+          .filter(Boolean)
+      } catch (e) {
+        console.error('Error fetching featured users:', e)
+        this.featuredUsers = []
+      }
     },
 
     async saveConfig(key, value, updatedBy = null) {

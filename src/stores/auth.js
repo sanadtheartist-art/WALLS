@@ -7,7 +7,8 @@ import {
   onAuthStateChanged,
   updateProfile,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  updatePassword
 } from 'firebase/auth'
 import {
   doc, setDoc, getDoc, serverTimestamp, collection,
@@ -358,6 +359,11 @@ export const useAuthStore = defineStore('auth', {
     async toggleBlockVisibility(id, visible) {
       if (!this.user?.uid) return
       await updateDoc(doc(db, 'users', this.user.uid, 'blocks', id), { visible, updatedAt: serverTimestamp() })
+    },
+
+    async setPassword(newPassword) {
+      if (!auth.currentUser) throw new Error('No user is logged in')
+      await updatePassword(auth.currentUser, newPassword)
     }
   }
 })
