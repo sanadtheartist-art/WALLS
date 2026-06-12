@@ -1,6 +1,6 @@
 <template>
   <div class="mb-4 rounded-2xl overflow-hidden w-full"
-    :class="block.style === 'glass' ? 'border border-white/10' : 'border border-[var(--color-muted)]'">
+    :class="blockClass">
     <div v-if="block.data?.url" class="aspect-video bg-black">
       <VideoPlayer :url="block.data.url" controls />
     </div>
@@ -12,7 +12,13 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import VideoPlayer from '../../ui/VideoPlayer.vue'
+import { getBlockClass } from '../../../constants/design'
 
-defineProps({ block: { type: Object, required: true } })
+const props = defineProps({ 
+  block: { type: Object, required: true },
+  defaultStyle: { type: String, default: 'default' }
+})
+const blockClass = computed(() => getBlockClass(props.block.style, props.block, props.defaultStyle))
 </script>

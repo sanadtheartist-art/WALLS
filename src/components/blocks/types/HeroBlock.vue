@@ -1,5 +1,6 @@
 <template>
   <div class="relative w-full rounded-2xl overflow-hidden shadow-2xl mb-4 group min-h-[280px] sm:min-h-[320px] flex items-end isolate [mask-image:radial-gradient(white,black)]"
+    :class="blockClass"
     :style="containerStyle">
 
     <VideoPlayer
@@ -34,8 +35,12 @@
 <script setup>
 import { computed } from 'vue'
 import VideoPlayer from '../../ui/VideoPlayer.vue'
+import { getBlockClass } from '../../../constants/design'
 
-const props = defineProps({ block: { type: Object, required: true } })
+const props = defineProps({ 
+  block: { type: Object, required: true },
+  defaultStyle: { type: String, default: 'default' }
+})
 
 const backgroundVideoUrl = computed(() => {
   const d = props.block.data ?? {}
@@ -43,6 +48,8 @@ const backgroundVideoUrl = computed(() => {
   if (d.bgType === 'youtube') return d.youtubeUrl || ''
   return ''
 })
+
+const blockClass = computed(() => getBlockClass(props.block.style, props.block, props.defaultStyle))
 
 const containerStyle = computed(() => {
   const d = props.block.data ?? {}

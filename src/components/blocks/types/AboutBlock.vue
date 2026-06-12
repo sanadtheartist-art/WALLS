@@ -1,6 +1,6 @@
 <template>
   <div class="mb-4 p-5 sm:p-8 rounded-2xl w-full overflow-hidden"
-    :class="block.style === 'glass' ? 'backdrop-blur-xl bg-white/5 border border-white/10' : 'bg-[var(--color-surface)] border border-[var(--color-muted)]'"
+    :class="blockClass"
     :style="{ textAlign: block.data?.align || 'center' }">
     <img v-if="block.data?.avatarUrl" :src="block.data.avatarUrl"
       class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-4 border-[var(--color-accent)] shadow-lg mx-auto mb-4"
@@ -13,5 +13,12 @@
   </div>
 </template>
 <script setup>
-defineProps({ block: { type: Object, required: true } })
+import { computed } from 'vue'
+import { getBlockClass } from '../../../constants/design'
+
+const props = defineProps({ 
+  block: { type: Object, required: true },
+  defaultStyle: { type: String, default: 'default' }
+})
+const blockClass = computed(() => getBlockClass(props.block.style, props.block, props.defaultStyle))
 </script>

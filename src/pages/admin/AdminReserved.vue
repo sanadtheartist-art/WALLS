@@ -67,30 +67,60 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: '
 
 const fetchReserved = async () => {
   loading.value = true
-  const { data } = await supabase.from('reserved_usernames').select('*').order('added_at', { ascending: false })
-  reserved.value = data ?? []
-  loading.value = false
+  try {
+    const { data, error } = await supabase.from('reserved_usernames').select('*').order('added_at', { ascending: false })
+    if (error) {
+      console.error('Error fetching reserved usernames:', error)
+    }
+    reserved.value = data ?? []
+  } catch (e) {
+    console.error('Error fetching reserved usernames:', e)
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(fetchReserved)
 
 const addReserved = async () => {
   saving.value = true
-  await supabase.from('reserved_usernames').insert({
-    username: newUsername.value.toLowerCase().trim(),
-    reason: newReason.value.trim() || null,
-    added_by: authStore.adminUser?.email
-  })
-  newUsername.value = ''
-  newReason.value = ''
-  saving.value = false
-  showAdd.value = false
-  fetchReserved()
+  try {
+    const { error } = await supabase.from('reserved_usernames').insert({
+      username: newUsername.value.toLowerCase().trim(),
+      reason: newReason.value.trim() || null,
+      added_by: authStore.adminUser?.email,
+      added_at: new Date().toISOString()
+    })
+    if (error) {
+      console.error('Error adding reserved username:', error)
+      alert('Error adding reserved username: ' + error.message)
+      return
+    }
+    newUsername.value = ''
+    newReason.value = ''
+    showAdd.value = false
+    await fetchReserved()
+  } catch (e) {
+    console.error('Error adding reserved username:', e)
+    alert('Error adding reserved username')
+  } finally {
+    saving.value = false
+  }
 }
 
 const removeReserved = async (username) => {
   if (!confirm(`Remove @${username} from reserved?`)) return
-  await supabase.from('reserved_usernames').delete().eq('username', username)
-  reserved.value = reserved.value.filter(r => r.username !== username)
+  try {
+    const { error } = await supabase.from('reserved_usernames').delete().eq('username', username)
+    if (error) {
+      console.error('Error removing reserved username:', error)
+      alert('Error removing reserved username: ' + error.message)
+      return
+    }
+    reserved.value = reserved.value.filter(r => r.username !== username)
+  } catch (e) {
+    console.error('Error removing reserved username:', e)
+    alert('Error removing reserved username')
+  }
 }
 </script>

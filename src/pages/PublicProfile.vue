@@ -2,8 +2,12 @@
   <div>
     <!-- Custom Loading Overlay -->
     <transition name="fade">
-      <div v-if="showCustomLoading" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black">
-        <div class="text-3xl md:text-5xl font-bold text-white tracking-[0.2em] uppercase animate-pulse">{{ user?.loadingText }}</div>
+      <div v-if="showCustomLoading" class="fixed inset-0 z-50 flex flex-col items-center justify-center" :style="{ backgroundColor: user?.loadingBgColor || '#000000' }">
+        <div class="font-bold tracking-[0.2em] uppercase" 
+             :class="[user?.loadingTextSize || 'text-3xl', user?.loadingAnimation || 'animate-pulse']"
+             :style="{ color: user?.loadingTextColor || '#ffffff' }">
+          {{ user?.loadingText }}
+        </div>
       </div>
     </transition>
 
@@ -77,6 +81,7 @@
               v-if="getBlockComponent(block.type)"
               :is="getBlockComponent(block.type)"
               :block="block"
+              :default-style="user?.defaultBlockStyle"
               class="wall-block opacity-0 translate-y-6"
               @click="trackClick(block)"
             />
@@ -121,7 +126,7 @@ import {
   FONT_CSS_MAP,
   FONT_FAMILY_MAP,
   getAnimationFrom,
-  getLinkBlockClass,
+  getBlockClass,
   getThemeBackground,
 } from '../constants/design'
 
@@ -195,19 +200,33 @@ const injectFont = (fontId) => {
 
 const linkClass = (block) => {
   const style = block.style || user.value?.defaultBlockStyle || 'default'
-  return getLinkBlockClass(style, block)
+  return getBlockClass(style, block, user.value?.defaultBlockStyle)
 }
 
 // ── Analytics ─────────────────────────────────────────────────────────────────
 const trackEvent = async (eventType, blockId = null) => {
   if (!user.value?.uid) return
   try {
-    await supabase.from('analytics_events').insert({ uid: user.value.uid, block_id: blockId, event_type: eventType })
-  } catch {}
+    await supabase.from('analytics_events').insert({ 
+      uid: user.value.uid, 
+      block_id: blockId, 
+      event_type: eventType,
+      created_at: new Date().toISOString()
+    })
+  } catch (e) {
+    console.error('Error tracking event:', e)
+  }
 }
 
 const trackClick = (block) => {
   if (['link','social'].includes(block.type)) trackEvent('click', block.id)
+}
+
+// Track page view when profile loads
+const trackPageView = async () => {
+  if (user.value?.uid) {
+    await trackEvent('view')
+  }
 }
 
 // ── GSAP Animations ───────────────────────────────────────────────────────────
@@ -247,12 +266,15 @@ onMounted(async () => {
       user.value = { uid, ...userDoc.data() }
       injectFont(user.value.font)
       
-      if (isInitialLoad && user.value.loadingText) {
-        showCustomLoading.value = true
-        setTimeout(() => {
-          showCustomLoading.value = false
-          triggerAnimations()
-        }, 1500)
+      if (isInitialLoad) {
+        trackPageView()
+        if (user.value.loadingText) {
+          showCustomLoading.value = true
+          setTimeout(() => {
+            showCustomLoading.value = false
+            triggerAnimations()
+          }, 1500)
+        }
       }
 
       // SEO Settings

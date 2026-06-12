@@ -44,6 +44,10 @@ const syncUserToSupabase = async (uid, data) => {
       seo_title:          data.seoTitle ?? null,
       seo_desc:           data.seoDesc ?? null,
       loading_text:       data.loadingText ?? null,
+      loading_bg_color:   data.loadingBgColor ?? null,
+      loading_text_color: data.loadingTextColor ?? null,
+      loading_text_size:  data.loadingTextSize ?? null,
+      loading_animation:  data.loadingAnimation ?? null,
       updated_at:         new Date().toISOString()
     }, { onConflict: 'uid' })
   } catch (e) {
@@ -318,12 +322,16 @@ export const useAuthStore = defineStore('auth', {
       })
     },
 
-    async updateBlock(id, data) {
+    async updateBlock(id, update) {
       if (!this.user?.uid) return
-      await updateDoc(doc(db, 'users', this.user.uid, 'blocks', id), {
-        data,
-        updatedAt: serverTimestamp()
-      })
+      const updateData = { updatedAt: serverTimestamp() }
+      if (update.data !== undefined) {
+        updateData.data = update.data
+      }
+      if (update.style !== undefined) {
+        updateData.style = update.style
+      }
+      await updateDoc(doc(db, 'users', this.user.uid, 'blocks', id), updateData)
     },
 
     async deleteBlock(id) {

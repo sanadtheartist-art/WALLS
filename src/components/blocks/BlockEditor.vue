@@ -15,9 +15,9 @@
         <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Card Style</label>
         <div class="flex gap-2 flex-wrap">
           <button v-for="s in blockStyleOptions" :key="s"
-            @click="form.style = s; autoSave()"
+            @click="blockStyle = s; autoSave()"
             class="px-3 py-1.5 rounded-lg border text-xs font-medium capitalize transition-all"
-            :class="form.style === s ? 'bg-orange-500/25 border-orange-500/60 text-orange-200' : 'border-[#1e293b] text-gray-400 hover:text-white'">
+            :class="blockStyle === s ? 'bg-orange-500/25 border-orange-500/60 text-orange-200' : 'border-[#1e293b] text-gray-400 hover:text-white'">
             {{ s }}
           </button>
         </div>
@@ -38,7 +38,7 @@
         <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Platform</label>
         <div class="grid grid-cols-4 gap-2">
           <button v-for="p in socialPlatforms" :key="p.value"
-            @click="form.platform = p.value; autoSave()"
+            @click="setSocialPlatform(p.value)"
             class="flex flex-col items-center gap-1 p-2 rounded-xl border transition-all"
             :class="form.platform === p.value ? 'border-orange-500/60 bg-orange-500/10 text-white' : 'border-[#1e293b] text-gray-400 hover:text-white'">
             <Icon :icon="p.icon" class="w-6 h-6 mb-1" />
@@ -287,6 +287,19 @@
       </div>
     </template>
 
+    <!-- ── CARD STYLE (ALL BLOCKS) ───────────────────────────────────── -->
+    <div class="flex flex-col gap-2 pt-4 border-t border-[#1e293b]">
+      <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Card Style</label>
+      <div class="flex gap-2 flex-wrap">
+        <button v-for="s in blockStyleOptions" :key="s"
+          @click="blockStyle = s; autoSave()"
+          class="px-3 py-1.5 rounded-lg border text-xs font-medium capitalize transition-all"
+          :class="blockStyle === s ? 'bg-orange-500/25 border-orange-500/60 text-orange-200' : 'border-[#1e293b] text-gray-400 hover:text-white'">
+          {{ s }}
+        </button>
+      </div>
+    </div>
+
     <!-- Saved toast -->
     <div v-if="saved" class="flex items-center gap-2 text-emerald-400 text-xs font-medium">
       <span>✓</span> Saved!
@@ -308,18 +321,20 @@ const props = defineProps({ block: { type: Object, required: true } })
 const emit = defineEmits(['save'])
 
 const form = ref({ ...props.block.data })
+const blockStyle = ref(props.block.style || 'default')
 const galleryImages = ref((props.block.data?.images ?? []).join('\n'))
 const saved = ref(false)
 let saveTimer = null
 
-watch(() => props.block.data, (d) => {
-  form.value = { ...d }
+watch(() => props.block, (b) => {
+  form.value = { ...b.data }
+  blockStyle.value = b.style || 'default'
   if (props.block.type === 'hero' && form.value.bgType === 'youtube' && form.value.youtubeUrl && !form.value.videoUrl) {
     form.value.videoUrl = form.value.youtubeUrl
     form.value.bgType = 'video'
   }
-  if (props.block.type === 'gallery') galleryImages.value = (d?.images ?? []).join('\n')
-}, { deep: true })
+  if (props.block.type === 'gallery') galleryImages.value = (b.data?.images ?? []).join('\n')
+}, { deep: true, immediate: true })
 
 const onHeroVideoChange = (url) => {
   form.value.videoUrl = url
@@ -352,7 +367,7 @@ const previewImages = computed(() => galleryImages.value.split('\n').map(s => s.
 const autoSave = () => {
   clearTimeout(saveTimer)
   saveTimer = setTimeout(() => {
-    emit('save', { ...form.value })
+    emit('save', { data: { ...form.value }, style: blockStyle.value })
     saved.value = true
     setTimeout(() => saved.value = false, 1500)
   }, 400)
@@ -360,6 +375,36 @@ const autoSave = () => {
 
 const saveGallery = () => {
   form.value.images = galleryImages.value.split('\n').map(s => s.trim()).filter(Boolean)
+  autoSave()
+}
+
+const socialUrlDefaults = {
+  twitter: 'https://twitter.com/',
+  instagram: 'https://instagram.com/',
+  linkedin: 'https://linkedin.com/in/',
+  github: 'https://github.com/',
+  youtube: 'https://youtube.com/@',
+  tiktok: 'https://tiktok.com/@',
+  discord: 'https://discord.gg/',
+  twitch: 'https://twitch.tv/',
+  spotify: 'https://open.spotify.com/user/',
+  facebook: 'https://facebook.com/',
+  whatsapp: 'https://wa.me/',
+  snapchat: 'https://snapchat.com/add/',
+  reddit: 'https://reddit.com/user/',
+  pinterest: 'https://pinterest.com/',
+  soundcloud: 'https://soundcloud.com/',
+  apple: 'https://apple.com/'
+}
+
+const setSocialPlatform = (platform) => {
+  form.value.platform = platform
+  // Only auto-update if URL is still the default for the old platform or empty
+  const currentUrl = form.value.url || ''
+  const oldPlatform = props.block.data?.platform || 'twitter'
+  if (!currentUrl || currentUrl.startsWith(socialUrlDefaults[oldPlatform])) {
+    form.value.url = socialUrlDefaults[platform] || ''
+  }
   autoSave()
 }
 

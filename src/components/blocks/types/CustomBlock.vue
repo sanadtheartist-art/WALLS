@@ -1,18 +1,21 @@
 <template>
-  <div class="w-full relative custom-block-wrapper" :id="`custom-block-${block.id}`">
+  <div class="w-full relative custom-block-wrapper mb-4 rounded-2xl p-4" :class="blockClass" :id="`custom-block-${block.id}`">
     <!-- HTML injected raw -->
     <div ref="container" v-if="block.data?.html" v-html="block.data.html" class="w-full"></div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, watch, ref, nextTick } from 'vue'
+import { onMounted, watch, ref, nextTick, computed } from 'vue'
+import { getBlockClass } from '../../../constants/design'
 
 const props = defineProps({
-  block: { type: Object, required: true }
+  block: { type: Object, required: true },
+  defaultStyle: { type: String, default: 'default' }
 })
 
 const container = ref(null)
+const blockClass = computed(() => getBlockClass(props.block.style, props.block, props.defaultStyle))
 
 const executeScripts = () => {
   if (!container.value) return

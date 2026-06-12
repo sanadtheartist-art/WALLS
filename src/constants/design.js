@@ -184,11 +184,11 @@ export function getAnimationFrom(style) {
   }
 }
 
-export function getLinkBlockClass(style, block) {
+export function getBlockClass(style, block, defaultStyle = 'default') {
   const base = block?.data?.bgColor ? '' : ''
   if (block?.data?.bgColor) return base
 
-  switch (style || block?.style || 'default') {
+  switch (style || block?.style || defaultStyle || 'default') {
     case 'glass':
       return 'backdrop-blur-xl bg-white/5 border-white/10 hover:bg-white/10'
     case 'neon':
@@ -213,6 +213,9 @@ export function getLinkBlockClass(style, block) {
       return 'bg-[var(--color-surface)] border-[var(--color-muted)] hover:border-[var(--color-accent)]'
   }
 }
+
+// Keep getLinkBlockClass for backward compatibility
+export const getLinkBlockClass = getBlockClass
 
 export function getThemeBackground(theme) {
   switch (theme) {

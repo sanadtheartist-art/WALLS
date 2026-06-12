@@ -11,8 +11,12 @@
 <script setup>
 import { computed } from 'vue'
 import { Icon } from '@iconify/vue'
+import { getBlockClass } from '../../../constants/design'
 
-const props = defineProps({ block: { type: Object, required: true } })
+const props = defineProps({ 
+  block: { type: Object, required: true },
+  defaultStyle: { type: String, default: 'default' }
+})
 
 const platforms = {
   twitter:   { icon: 'simple-icons:x', label: 'X (Twitter)' },
@@ -36,8 +40,5 @@ const platforms = {
 const platformIcon = computed(() => platforms[props.block.data?.platform]?.icon ?? 'lucide:link')
 const platformLabel = computed(() => platforms[props.block.data?.platform]?.label ?? props.block.data?.platform ?? 'Social')
 
-const blockClass = computed(() => {
-  if (props.block.style === 'glass') return 'backdrop-blur-xl bg-white/5 border border-white/10 hover:bg-white/10'
-  return 'bg-[var(--color-surface)] border border-[var(--color-muted)] hover:border-[var(--color-accent)]'
-})
+const blockClass = computed(() => getBlockClass(props.block.style, props.block, props.defaultStyle))
 </script>
