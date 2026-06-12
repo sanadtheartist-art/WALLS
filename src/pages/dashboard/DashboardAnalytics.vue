@@ -1,60 +1,51 @@
 <template>
-  <div class="p-6 max-w-4xl">
-    <h2 class="text-3xl font-bold text-white mb-8">Analytics</h2>
+  <div class="p-4 sm:p-6 max-w-4xl">
+    <h2 class="text-2xl sm:text-3xl font-bold text-white mb-6 sm:mb-8">Analytics</h2>
     
     <div v-if="loading" class="text-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto" style="border-color: var(--color-accent)"></div>
-      <p class="text-gray-400 mt-4">Loading analytics...</p>
+      <div class="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 mx-auto" style="border-color: var(--color-accent)"></div>
+      <p class="text-gray-400 mt-4 text-sm">Loading analytics...</p>
     </div>
     
     <div v-else>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-[#111827] border border-[#334155] rounded-2xl p-6">
-          <p class="text-gray-400 mb-2">Total Views</p>
-          <h3 class="text-4xl font-bold text-white">{{ stats.views }}</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
+        <div class="bg-[#111827] border border-[#334155] rounded-2xl p-4 sm:p-6">
+          <p class="text-gray-400 mb-2 text-sm">Total Views</p>
+          <h3 class="text-3xl sm:text-4xl font-bold text-white">{{ stats.views }}</h3>
           <p class="text-sm text-indigo-400 mt-2">Past 30 days</p>
         </div>
-        <div class="bg-[#111827] border border-[#334155] rounded-2xl p-6">
-          <p class="text-gray-400 mb-2">Total Clicks</p>
-          <h3 class="text-4xl font-bold text-white">{{ stats.clicks }}</h3>
+        <div class="bg-[#111827] border border-[#334155] rounded-2xl p-4 sm:p-6">
+          <p class="text-gray-400 mb-2 text-sm">Total Clicks</p>
+          <h3 class="text-3xl sm:text-4xl font-bold text-white">{{ stats.clicks }}</h3>
           <p class="text-sm text-indigo-400 mt-2">Past 30 days</p>
         </div>
-        <div class="bg-[#111827] border border-[#334155] rounded-2xl p-6">
-          <p class="text-gray-400 mb-2">Click Through Rate</p>
-          <h3 class="text-4xl font-bold text-white">{{ stats.ctr }}%</h3>
+        <div class="bg-[#111827] border border-[#334155] rounded-2xl p-4 sm:p-6">
+          <p class="text-gray-400 mb-2 text-sm">Click Through Rate</p>
+          <h3 class="text-3xl sm:text-4xl font-bold text-white">{{ stats.ctr }}%</h3>
           <p class="text-sm text-indigo-400 mt-2">Past 30 days</p>
         </div>
       </div>
 
       <div v-if="events.length" class="bg-[#111827] border border-[#334155] rounded-2xl overflow-hidden">
-        <div class="px-6 py-4 border-b border-[#334155]">
-          <h3 class="text-lg font-bold text-white">Recent Activity</h3>
+        <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-[#334155]">
+          <h3 class="text-base sm:text-lg font-bold text-white">Recent Activity</h3>
         </div>
-        <table class="w-full">
-          <thead>
-            <tr class="text-left text-xs text-gray-500 uppercase tracking-wider border-b border-[#334155]">
-              <th class="px-6 py-4">Event</th>
-              <th class="px-6 py-4">Block</th>
-              <th class="px-6 py-4">Time</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-[#334155]">
-            <tr v-for="e in events" :key="e.id" class="hover:bg-[#1e293b]/40">
-              <td class="px-6 py-3">
-                <span class="text-xs px-2 py-1 rounded-full" :class="eventClass(e.event_type)">{{ e.event_type }}</span>
-              </td>
-              <td class="px-6 py-3 text-gray-400 text-sm">{{ e.block_id || '—' }}</td>
-              <td class="px-6 py-3 text-gray-500 text-sm">{{ formatDate(e.created_at) }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="space-y-0">
+          <div v-for="e in events" :key="e.id" class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-[#334155] last:border-0 hover:bg-[#1e293b]/40">
+            <div class="flex items-center gap-3">
+              <span class="text-xs px-2 py-1 rounded-full" :class="eventClass(e.event_type)">{{ e.event_type }}</span>
+              <span class="text-gray-400 text-sm">{{ e.block_id || '—' }}</span>
+            </div>
+            <span class="text-gray-500 text-xs sm:text-sm">{{ formatDate(e.created_at) }}</span>
+          </div>
+        </div>
       </div>
       
-      <div v-else class="bg-[#111827] border border-[#334155] rounded-2xl p-6 h-64 flex items-center justify-center">
+      <div v-else class="bg-[#111827] border border-[#334155] rounded-2xl p-4 sm:p-6 h-48 sm:h-64 flex items-center justify-center">
         <div class="text-center">
-          <span class="text-4xl mb-4 block">📈</span>
-          <h3 class="text-xl font-bold text-white mb-2">Not enough data</h3>
-          <p class="text-gray-400">Share your wall to start collecting analytics.</p>
+          <span class="text-3xl sm:text-4xl mb-4 block">📈</span>
+          <h3 class="text-lg sm:text-xl font-bold text-white mb-2">Not enough data</h3>
+          <p class="text-gray-400 text-sm">Share your wall to start collecting analytics.</p>
         </div>
       </div>
     </div>

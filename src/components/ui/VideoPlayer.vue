@@ -53,14 +53,14 @@ const directUrl = computed(() => (isDirectVideoUrl(props.url) ? props.url : null
 
 const frameClass = computed(() => {
   if (props.background) {
-    return 'absolute inset-0 w-full h-full object-cover pointer-events-none scale-150 transform-origin-center'
+    return 'absolute inset-0 z-0 w-full h-full object-cover pointer-events-none scale-150 transform-origin-center'
   }
   return props.cover ? 'w-full h-full' : 'w-full h-full'
 })
 
 const videoClass = computed(() => {
   const base = props.cover ? 'w-full h-full object-cover' : 'w-full h-full'
-  return props.background ? `absolute inset-0 ${base}` : base
+  return props.background ? `absolute inset-0 z-0 ${base}` : base
 })
 
 const videoStyle = computed(() => {

@@ -12,6 +12,12 @@
       cover
       background
     />
+    
+    <img
+      v-else-if="backgroundImageUrl"
+      :src="backgroundImageUrl"
+      class="absolute inset-0 z-0 w-full h-full object-cover"
+    />
 
     <!-- Overlay -->
     <div class="absolute inset-0 z-10" :style="overlayStyle"></div>
@@ -49,6 +55,14 @@ const backgroundVideoUrl = computed(() => {
   return ''
 })
 
+const backgroundImageUrl = computed(() => {
+  const d = props.block.data ?? {}
+  if (d.bgType === 'image' || (!d.bgType && d.imageUrl)) {
+    return d.imageUrl
+  }
+  return ''
+})
+
 const blockClass = computed(() => getBlockClass(props.block.style, props.block, props.defaultStyle))
 
 const containerStyle = computed(() => {
@@ -63,17 +77,7 @@ const containerStyle = computed(() => {
   if (d.bgType === 'color') {
     return { background: d.solidColor || '#111827' }
   }
-  if (d.bgType === 'video' || d.bgType === 'youtube') {
-    return { background: '#000' }
-  }
-  if (d.imageUrl) {
-    return {
-      backgroundImage: `url(${d.imageUrl})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-    }
-  }
-  return { background: 'linear-gradient(135deg, #7c3aed, #3b82f6)' }
+  return { background: '#000' }
 })
 
 const overlayStyle = computed(() => {
