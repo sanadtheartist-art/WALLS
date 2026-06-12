@@ -1,10 +1,16 @@
 <template>
   <div class="mb-4 w-full p-4 rounded-2xl"
     :class="blockClass">
-    <div v-if="images.length" class="grid gap-2"
-      :class="[`grid-cols-${block.data?.columns || 2}`, block.data?.gap === 'lg' ? 'gap-4' : block.data?.gap === 'sm' ? 'gap-1' : 'gap-2']">
+    <div v-if="images.length" 
+      :class="[
+        block.data?.layout === 'masonry' 
+          ? `columns-${block.data?.columns || 2} ${block.data?.gap === 'lg' ? 'gap-4 space-y-4' : block.data?.gap === 'sm' ? 'gap-1 space-y-1' : 'gap-2 space-y-2'}` 
+          : `grid grid-cols-${block.data?.columns || 2} ${block.data?.gap === 'lg' ? 'gap-4' : block.data?.gap === 'sm' ? 'gap-1' : 'gap-2'}`
+      ]">
       <img v-for="(img, i) in images" :key="i" :src="img"
-        class="w-full aspect-square object-cover rounded-xl" loading="lazy" />
+        class="w-full object-cover rounded-xl" 
+        :class="block.data?.layout === 'masonry' ? 'break-inside-avoid mb-0' : 'aspect-square'"
+        loading="lazy" />
     </div>
     <div v-else class="aspect-video flex items-center justify-center text-gray-500 text-sm">
       🖼 Add image URLs to build a gallery

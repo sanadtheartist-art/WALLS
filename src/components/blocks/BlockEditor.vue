@@ -259,7 +259,14 @@
       <div v-if="previewImages.length" class="grid gap-2" :class="`grid-cols-${form.columns || 2}`">
         <img v-for="(img, i) in previewImages.slice(0, 6)" :key="i" :src="img" class="w-full aspect-square object-cover rounded-xl" />
       </div>
-      <div class="grid grid-cols-2 gap-3">
+      <div class="grid grid-cols-3 gap-3">
+        <div class="flex flex-col gap-2 mb-4">
+          <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Layout</label>
+          <select v-model="form.layout" class="w-full px-4 py-3 bg-[#111827] border border-[#1e293b] rounded-xl text-white text-sm focus:outline-none focus:border-orange-500 resize-none transition-colors" @change="autoSave">
+            <option value="grid">Grid</option>
+            <option value="masonry">Masonry</option>
+          </select>
+        </div>
         <div class="flex flex-col gap-2 mb-4">
           <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Columns</label>
           <select v-model.number="form.columns" class="w-full px-4 py-3 bg-[#111827] border border-[#1e293b] rounded-xl text-white text-sm focus:outline-none focus:border-orange-500 resize-none transition-colors" @change="autoSave">

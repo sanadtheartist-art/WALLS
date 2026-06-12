@@ -299,7 +299,7 @@ export const useAuthStore = defineStore('auth', {
         contact: { title: 'Get In Touch' },
         text:    { content: 'Write something amazing...' },
         divider: { style: 'line' },
-        gallery: { images: [], columns: 2 },
+        gallery: { images: [], columns: 2, layout: 'grid' },
         video:   { url: '', caption: '' },
       }
 

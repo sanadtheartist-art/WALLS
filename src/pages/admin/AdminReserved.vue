@@ -71,6 +71,10 @@ const fetchReserved = async () => {
     const { data, error } = await supabase.from('reserved_usernames').select('*').order('added_at', { ascending: false })
     if (error) {
       console.error('Error fetching reserved usernames:', error)
+      // Fallback if ordering fails
+      const { data: fallbackData } = await supabase.from('reserved_usernames').select('*')
+      reserved.value = fallbackData ?? []
+      return
     }
     reserved.value = data ?? []
   } catch (e) {
@@ -85,24 +89,27 @@ onMounted(fetchReserved)
 const addReserved = async () => {
   saving.value = true
   try {
-    const { error } = await supabase.from('reserved_usernames').insert({
+    const { data, error } = await supabase.from('reserved_usernames').insert({
       username: newUsername.value.toLowerCase().trim(),
       reason: newReason.value.trim() || null,
-      added_by: authStore.adminUser?.email,
+      added_by: authStore.adminUser?.email || 'admin',
       added_at: new Date().toISOString()
-    })
+    }).select()
+    
     if (error) {
       console.error('Error adding reserved username:', error)
       alert('Error adding reserved username: ' + error.message)
       return
     }
+    
+    console.log('Inserted reserved username:', data)
     newUsername.value = ''
     newReason.value = ''
     showAdd.value = false
     await fetchReserved()
   } catch (e) {
-    console.error('Error adding reserved username:', e)
-    alert('Error adding reserved username')
+    console.error('Exception adding reserved username:', e)
+    alert('Exception adding reserved username: ' + e.message)
   } finally {
     saving.value = false
   }

@@ -46,6 +46,12 @@ export const FONTS = [
   { id: 'space', label: 'Space Mono', family: '"Space Mono", monospace' },
   { id: 'dm-mono', label: 'DM Mono', family: '"DM Mono", monospace' },
   { id: 'fira-code', label: 'Fira Code', family: '"Fira Code", monospace' },
+  { id: 'anton', label: 'Anton', family: 'Anton, sans-serif' },
+  { id: 'righteous', label: 'Righteous', family: 'Righteous, cursive' },
+  { id: 'oswald', label: 'Oswald', family: 'Oswald, sans-serif' },
+  { id: 'pacifico', label: 'Pacifico', family: 'Pacifico, cursive' },
+  { id: 'lexend', label: 'Lexend', family: 'Lexend, sans-serif' },
+  { id: 'archivo-black', label: 'Archivo Black', family: '"Archivo Black", sans-serif' },
 ]
 
 export const ANIMATIONS = [
@@ -100,6 +106,12 @@ export const FONT_FAMILY_MAP = {
   'dm-mono': 'DM+Mono',
   'fira-code': 'Fira+Code',
   cabinet: 'Cabinet+Grotesk',
+  anton: 'Anton',
+  righteous: 'Righteous',
+  oswald: 'Oswald',
+  pacifico: 'Pacifico',
+  lexend: 'Lexend',
+  'archivo-black': 'Archivo+Black',
 }
 
 export const FONT_CSS_MAP = Object.fromEntries(FONTS.map((f) => [f.id, f.family]))

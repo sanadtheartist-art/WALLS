@@ -123,20 +123,38 @@
           <p class="text-blue-400 text-sm font-semibold uppercase tracking-widest mb-4">Community picks</p>
           <h2 class="text-4xl font-black text-white">Featured Walls</h2>
         </div>
-        <div v-if="featuredUsers.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div v-if="featuredUsers.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <router-link
             v-for="user in featuredUsers"
             :key="user.username"
             :to="`/${user.username}`"
-            class="landing-feature group flex items-center gap-4 p-5 rounded-2xl bg-white/5 border border-white/10 hover:border-blue-500/30 hover:bg-blue-500/5 transition-all hover:-translate-y-1"
+            class="landing-feature group flex flex-col rounded-3xl bg-white/5 border border-white/10 hover:border-blue-500/30 hover:bg-white/10 transition-all duration-300 hover:-translate-y-2 overflow-hidden"
           >
-            <img v-if="user.avatar_url" :src="user.avatar_url" :alt="user.display_name || user.username" class="w-14 h-14 rounded-2xl object-cover ring-2 ring-white/10 group-hover:ring-blue-500/40 transition-all" />
-            <div v-else class="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-600 to-amber-600 flex items-center justify-center text-white font-black text-xl">
-              {{ (user.display_name || user.username).charAt(0).toUpperCase() }}
+            <!-- Wall Preview Iframe -->
+            <div class="relative w-full aspect-[9/16] bg-[#0B1120] overflow-hidden border-b border-white/10">
+              <div class="absolute inset-0 z-10 pointer-events-none group-hover:bg-blue-500/10 transition-colors duration-300"></div>
+              <iframe
+                :src="`/${user.username}`"
+                class="absolute top-0 left-0 w-full h-full pointer-events-none"
+                frameborder="0"
+                scrolling="no"
+                tabindex="-1"
+              ></iframe>
             </div>
-            <div class="min-w-0">
-              <div class="text-white font-bold truncate group-hover:text-blue-300 transition-colors">{{ user.display_name || user.username }}</div>
-              <div class="text-gray-500 text-sm truncate">@{{ user.username }}</div>
+            
+            <!-- User Info -->
+            <div class="p-5 flex items-center gap-4 bg-gradient-to-t from-black/40 to-transparent">
+              <img v-if="user.avatar_url" :src="user.avatar_url" :alt="user.display_name || user.username" class="w-12 h-12 rounded-full object-cover ring-2 ring-white/10 group-hover:ring-blue-500/40 transition-all shadow-lg" />
+              <div v-else class="w-12 h-12 rounded-full bg-gradient-to-br from-orange-600 to-amber-600 flex items-center justify-center text-white font-black text-xl shadow-lg ring-2 ring-white/10">
+                {{ (user.display_name || user.username).charAt(0).toUpperCase() }}
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-white font-bold truncate group-hover:text-blue-300 transition-colors text-lg">{{ user.display_name || user.username }}</div>
+                <div class="text-gray-400 text-sm truncate group-hover:text-gray-300 transition-colors">@{{ user.username }}</div>
+              </div>
+              <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 group-hover:bg-blue-500 group-hover:text-white transition-all duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+              </div>
             </div>
           </router-link>
         </div>
