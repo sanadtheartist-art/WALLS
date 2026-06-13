@@ -67,7 +67,7 @@ export const useSiteConfigStore = defineStore('siteConfig', {
 
       try {
         const { data, error } = await supabase
-          .from('users')
+          .from('profiles')
           .select('username, display_name, avatar_url')
           .in('username', this.featured_walls)
 

@@ -225,7 +225,7 @@ const removeStat = (i) => {
 
 const saveConfig = async (key, value) => {
   try {
-    await siteConfig.saveConfig(key, value, authStore.adminUser?.email || null)
+    await siteConfig.saveConfig(key, value, authStore.adminUser?.id || null)
     showSaved()
   } catch (e) {
     showError(e.message || 'Failed to save config')

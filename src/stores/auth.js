@@ -15,17 +15,27 @@ export const useAuthStore = defineStore('auth', {
 
   actions: {
     async initializeAuth() {
-      return new Promise((resolve) => {
-        this.unsubscribeAuth = supabase.auth.onAuthStateChange(async (event, session) => {
-          if (session?.user) {
-            await this.fetchProfile(session.user.id)
-          } else {
-            this.user = null
-          }
-          this.loading = false
-          resolve()
-        })
+      // First check current session and handle OAuth redirect
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (session?.user) {
+        // Check if profile exists, create if needed (for Google signups)
+        await this.fetchProfile(session.user.id)
+      } else {
+        this.user = null
+      }
+
+      // Set up listener for future auth changes
+      this.unsubscribeAuth = supabase.auth.onAuthStateChange(async (event, newSession) => {
+        if (event === 'SIGNED_IN' && newSession?.user) {
+          await this.fetchProfile(newSession.user.id)
+        } else if (event === 'SIGNED_OUT') {
+          this.user = null
+          this.blocks = []
+        }
       })
+
+      this.loading = false
     },
 
     async fetchProfile(userId) {
@@ -89,17 +99,39 @@ export const useAuthStore = defineStore('auth', {
     async signUp(email, password, username, displayName) {
       const cleanUsername = username.toLowerCase().trim()
 
+      // Check reserved usernames first
       const { data: reserved } = await supabase.from('reserved_usernames').select('username').eq('username', cleanUsername).single()
       if (reserved) throw new Error('Username is reserved')
 
+      // Check existing usernames
       const { data: existing } = await supabase.from('usernames').select('username').eq('username', cleanUsername).single()
       if (existing) throw new Error('Username already taken')
 
-      const { data: authData, error: authError } = await supabase.auth.signUp({ email, password })
-      if (authError) throw authError
+      // Try to sign up
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username: cleanUsername,
+            display_name: displayName
+          },
+          redirectTo: window.location.origin
+        }
+      })
+      
+      if (authError) {
+        if (authError.message.includes('rate limit')) {
+          throw new Error('Too many sign up attempts! Please try again later.')
+        }
+        throw authError
+      }
+
+      if (!authData.user) throw new Error('User creation failed')
 
       const userId = authData.user.id
 
+      // Create profile
       const { error: profileError } = await supabase.from('profiles').insert({
         id: userId,
         username: cleanUsername,
@@ -117,12 +149,14 @@ export const useAuthStore = defineStore('auth', {
       })
       if (profileError) throw profileError
 
+      // Create username record
       const { error: usernameError } = await supabase.from('usernames').insert({
         username: cleanUsername,
         user_id: userId
       })
       if (usernameError) throw usernameError
 
+      // Fetch profile to set in state
       await this.fetchProfile(userId)
     },
 
@@ -143,9 +177,14 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async logInWithGoogle() {
-      const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+          scopes: 'email profile'
+        }
+      })
       if (error) throw error
-      // We'll handle the rest after redirect in initializeAuth
     },
 
     async adminLogIn(email, password) {
